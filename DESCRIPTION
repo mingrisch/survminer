@@ -1,13 +1,13 @@
 Package: survminer
 Type: Package
 Title: Drawing Survival Curves using 'ggplot2'
-Version: 0.3.1.999
-Date: 2017-03-21
+Version: 0.4.1.99
+Date: 2017-11-17
 Authors@R: c(
     person("Alboukadel", "Kassambara", role = c("aut", "cre"), email = "alboukadel.kassambara@gmail.com"),
     person("Marcin", "Kosinski", role = c("aut"), email = "m.p.kosinski@@gmail.com"),
-    person("Przemyslaw", "Biecek", role = c("ctb"), email = "przemyslaw.biecek@gmail.com")
-    )
+    person("Przemyslaw", "Biecek", role = c("ctb"), email = "przemyslaw.biecek@gmail.com"),
+    person("Scheipl", "Fabian", role = c("ctb"), email = "fabian.scheipl@gmail.com"))
 Description: Contains the function 'ggsurvplot()' for drawing easily beautiful
     and 'ready-to-publish' survival curves with the 'number at risk' table
     and 'censoring count plot'. Other functions are also available to plot 
@@ -16,7 +16,7 @@ License: GPL-2
 LazyData: TRUE
 Depends:
     ggplot2,
-    ggpubr(>= 0.1.2)
+    ggpubr(>= 0.1.3)
 Imports:
     grid,
     gridExtra(>= 2.0),
@@ -30,10 +30,13 @@ Imports:
     dplyr,
     tidyr,
     survMisc,
-    cmprsk
+    cmprsk,
+    purrr,
+    tibble
 Suggests:
     knitr,
-    KMsurv
+    KMsurv,
+    flexsurv
 VignetteBuilder: knitr
 URL: http://www.sthda.com/english/rpkgs/survminer/
 BugReports: https://github.com/kassambara/survminer/issues
@@ -44,20 +47,30 @@ Collate:
     'add_ggsurvplot.R'
     'utilities.R'
     'surv_summary.R'
-    'theme_classic2.R'
+    'ggsurvtable.R'
+    'surv_pvalue.R'
+    'ggsurvplot_df.R'
+    'ggsurvplot_core.R'
+    'ggsurvplot_add_all.R'
+    'ggsurvplot_list.R'
+    'ggsurvplot_group_by.R'
     'ggsurvplot.R'
     'arrange_ggsurvplots.R'
+    'ggadjustedcurves.R'
     'ggcompetingrisks.R'
-    'ggcoxadjustedcurves.R'
     'ggcoxdiagnostics.R'
     'ggcoxfunctional.R'
     'ggcoxzph.R'
-    'ggcumcensor.R'
-    'ggcumevents.R'
+    'ggflexsurvplot.R'
     'ggforest.R'
-    'ggrisktable.R'
     'ggsurvevents.R'
+    'ggsurvplot_combine.R'
+    'ggsurvplot_facet.R'
     'ggsurvtheme.R'
+    'ggurvplot_arguments.R'
     'myeloma.R'
     'pairwise_survdiff.R'
     'surv_cutpoint.R'
+    'surv_group_by.R'
+    'surv_fit.R'
+    'surv_median.R'

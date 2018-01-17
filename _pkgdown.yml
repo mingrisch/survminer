@@ -1,12 +1,19 @@
 templates:
   params:
-    bootswatch: flatly
+    bootswatch: lumen
 
 reference:
+  - title: Fit survival curves
+    Contents:
+      - surv_group_by
+      - surv_fit
+      - surv_median
+      - surv_pvalue
   - title: Survival Curves
     desc:  Summarize and visualize survival curves.
     contents:
       - ggsurvplot
+      - ggflexsurvplot
       - arrange_ggsurvplots
       - ggsurvevents
       - surv_summary
@@ -20,15 +27,19 @@ reference:
   - title: Summary of Cox Model
     contents:
       - ggforest
-      - ggcoxadjustedcurves
+      - ggadjustedcurves
   - title: Competing Risks
     contents:
       - ggcompetingrisks
   - title: Helpers
     contents:
-      - ggrisktable
-      - ggcumevents
-      - ggcumcensor
+      - ggsurvtable
+      - ggsurvplot_df
+      - ggsurvplot_list
+      - ggsurvplot_group_by
+      - ggsurvplot_add_all
+      - ggsurvplot_combine
+      - ggsurvplot_facet_by
   - title: Data
     contents:
       - myeloma
@@ -37,7 +48,6 @@ reference:
     contents:
       - ggsurvtheme
       - theme_survminer
-      - theme_classic2
       - add_ggsurvplot
 
 

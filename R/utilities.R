@@ -1,5 +1,15 @@
 #' @import ggplot2
 #' @import ggpubr
+#' @importFrom survival Surv
+#' @importFrom survival survfit
+#' @importFrom survival survdiff
+#' @importFrom magrittr %>%
+#' @importFrom dplyr mutate
+#' @importFrom purrr map
+#' @importFrom methods is
+#' @importFrom stats pchisq
+#' @importFrom survMisc ten comp
+#' @importFrom utils capture.output
 
 
 # Count the number of ggplots in a list
@@ -39,8 +49,25 @@
                  position = position,
                  params = list(na.rm = na.rm, ...))
 }
-
 GeomConfint <- ggplot2::ggproto('GeomConfint', ggplot2::GeomRibbon,
+                                required_aes = c("x", "ymin", "ymax"),
+                                draw_group = function(self, data, panel_scales, coord, na.rm = FALSE) {
+                                  if (na.rm) data <- data[stats::complete.cases(self$required_aes), ]
+                                  data <- data[order(data$group, data$x), ]
+                                  data <- self$stairstep_confint(data)
+                                  ggplot2:::GeomRibbon$draw_group(data, panel_scales, coord, na.rm = FALSE)
+                                },
+                                stairstep_confint = function (data) {
+                                  data <- as.data.frame(data)[order(data$x), ]
+                                  n <- nrow(data)
+                                  ys <- rep(1:n, each = 2)[-2 * n]
+                                  xs <- c(1, rep(2:n, each = 2))
+                                  data.frame(x = data$x[xs], ymin = data$ymin[ys], ymax = data$ymax[ys],
+                                             data[xs, setdiff(names(data), c("x", "ymin", "ymax"))])
+                                }
+)
+
+GeomConfint_old <- ggplot2::ggproto('GeomConfint_old', ggplot2::GeomRibbon,
                                 required_aes = c("x", "ymin", "ymax"),
                                 draw_group = function(data, panel_scales, coord, na.rm = FALSE) {
                                   if (na.rm) data <- data[complete.cases(data[c("x", "ymin", "ymax")]), ]
@@ -90,6 +117,8 @@ GeomConfint <- ggplot2::ggproto('GeomConfint', ggplot2::GeomRibbon,
     if (complain)
       warning ("The `data` argument is not provided. Data will be extracted from model fit.")
     data <- eval(fit$call$data)
+    if (is.null(data))
+      stop("The `data` argument should be provided either to ggsurvfit or survfit.")
   }
   data
 }
@@ -116,12 +145,12 @@ GeomConfint <- ggplot2::ggproto('GeomConfint', ggplot2::GeomRibbon,
 #   - n.event: the cumulative number of events that have occurred since the last time listed until time t+0
 #   - n.censor: number of censored subjects
 #   - strata_size: number of subject in the strata
-.get_timepoints_survsummary <- function(fit, data, times)
+.get_timepoints_survsummary <- function(fit, data, times, decimal.place = 0)
 {
   survsummary <- summary(fit, times = times, extend = TRUE)
 
   if (is.null(fit$strata)) {
-    .strata <- factor(rep("All", length(times)))
+    .strata <- factor(rep("All", length(survsummary$time)))
     strata_names <- "All"
     strata_size <- rep(fit$n, length(.strata))
   }
@@ -136,11 +165,11 @@ GeomConfint <- ggplot2::ggproto('GeomConfint', ggplot2::GeomRibbon,
   res <- data.frame(
     strata = strata,
     time = survsummary$time,
-    n.risk = survsummary$n.risk,
+    n.risk = round(survsummary$n.risk, digits = decimal.place),
     pct.risk = round(survsummary$n.risk*100/strata_size),
-    n.event = survsummary$n.event,
+    n.event = round(survsummary$n.event, digits = decimal.place),
     cum.n.event = unlist(by(survsummary$n.event, strata, cumsum)),
-    n.censor = survsummary$n.censor,
+    n.censor = round(survsummary$n.censor, digits = decimal.place),
     cum.n.censor = unlist(by(survsummary$n.censor, strata, cumsum)),
     strata_size = strata_size
   )
@@ -240,4 +269,251 @@ GeomConfint <- ggplot2::ggproto('GeomConfint', ggplot2::GeomRibbon,
     )
   round(labels*xtrans,2)
 }
+
+
+# Extract strata colors used in survival curves
+# Will be used to color the y.text of risk table and cumevents table
+.extract_ggplot_colors <- function(p, grp.levels){
+  g <- ggplot_build(p)
+  .cols <- unlist(unique(g$data[[1]]["colour"]))
+  if(!is.null(grp.levels)){
+    if(length(.cols)==1) .cols <- rep(.cols, length(grp.levels))
+    names(.cols) <- grp.levels
+  }
+  .cols
+}
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# Helper functions for survival curves
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+.is_survfit <- function(fit){
+  inherits(fit, "survfit")
+}
+
+.is_grouped_data <- function(data){
+  inherits(data, c("surv_group_by"))
+}
+
+.get_fit_formula <- function(fit){
+  fit$call$formula %>%
+    stats::as.formula()
+}
+
+.build_formula <- function(surv.obj, variables){
+  . <- NULL
+  paste(variables, collapse  = " + ") %>%
+    paste0(surv.obj, " ~ ", .) %>%
+    stats::as.formula()
+}
+
+# Function defining a transformation of the survival curve
+#::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# see ?survival::plot.survfit
+# d: data frame containing the column surv, upper and lower
+# fun the function
+.apply_surv_func <- function(d, fun = NULL){
+
+  if (!is.null(fun)) {
+    if (is.character(fun)) {
+      fun <- switch(fun, log = function(y) log(y),
+                    event = function(y) 1 - y,
+                    cumhaz = function(y) -log(y),
+                    cloglog = function(y) log(-log(y)),
+                    pct = function(y) y * 100,
+                    logpct = function(y) 100 * y,
+                    identity = function(y) y,
+                    stop("Unrecognized survival function argument"))
+    }
+    else if (!is.function(fun)) {
+      stop("Invalid 'fun' argument")
+    }
+    cnames <- colnames(d)
+    if("surv" %in% cnames) d$surv <- fun(d$surv)
+    if("upper" %in% cnames) d$upper <- fun(d$upper)
+    if("lower" %in% cnames) d$lower <- fun(d$lower)
+  }
+  return(d)
+}
+
+
+# Get the names of formulas
+#.........................................................................
+# If formulas is a named lists, returns the list names if available.
+# If formula names are not available, collapse the variables in the formula, and use this as the formula name
+# If formula is a formula object, returns collapsed variable names using "+"
+.get_formula_names <- function(formula){
+
+  # helper function to return collapsed variable names for one formula.
+  .fname <- function(formula){
+    res <- attr(stats::terms(formula), "term.labels")
+    if(.is_empty(res)) res <- "null_model"
+    else res <- .collapse(res, sep = " + ")
+    res
+  }
+
+  if(.is_list(formula)){
+    fnames <- names(formula)
+    if(is.null(fnames)) fnames <- purrr::map(formula, .fname) %>%
+        unlist()
+  }
+
+  else fnames <- .fname(formula)
+  fnames
+}
+
+
+
+# Get the names of fit
+# If fit is a named lists, returns the list names if available.
+# If fit names are not available, collapse the variables in the formula, and use this as the fit name
+#.........................................................................
+.get_fit_names <- function(fit){
+
+  if(.is_list(fit)){
+    fnames <- names(fit)
+    if(is.null(fnames)) {
+      fnames <- purrr::map(fit, .get_fit_formula) %>%
+        .get_formula_names()
+    }
+  }
+  else fnames <- .get_fit_formula(fit) %>%
+      .get_formula_names()
+  fnames
+}
+
+
+# Extract survfit components
+#.................................................................................
+# Return a list: list(formula, surv, variables, data.all, data.formula)
+#       - formula: survival formula
+#       - surv: surv object
+#       - variables: vector of variable names
+#       - data.all: the dataset used in survfit
+#       - data.formula: data off all variables in the formula including time and status
+.extract.survfit <- function(fit, data = NULL){
+
+  if(inherits(fit, "survfit.cox"))
+    return(list())
+
+  .formula <- fit$call$formula %>%
+    stats::as.formula()
+  surv.obj <- deparse(.formula[[2]])
+  surv.vars <- attr(stats::terms(.formula), "term.labels")
+  data.all <- data <- .get_data(fit, data = data, complain = FALSE)
+  # data of variables used in formula
+  data.formula <- stats::get_all_vars(.formula, data = data) #%>%
+  #na.omit()
+
+  list(formula = .formula, surv = surv.obj,
+       variables = surv.vars,
+       data.all = data.all,
+       data.formula = data.formula)
+}
+
+
+# Create strata from variable names
+#.................................................................................
+# Returns a factor
+# Example:
+# library(survival)
+# .create_strata(colon, c("sex", "rx"))
+.create_strata <- function(data, var.names, sep = ", "){
+
+  # Strata
+  .strata <- data[, var.names, drop = FALSE] %>%
+    survival::strata(sep = sep)
+  .strata.levels <- levels(.strata)
+  # Replace  "=" by ".
+  .strata <- gsub("=", ":", .strata) %>% .trim()
+  .strata.levels <- gsub("=", ":", .strata.levels) %>% .trim()
+  factor(.strata, levels = .strata.levels)
+}
+
+
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# General helper functions
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# Returns the levels of a factor variable
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.levels <- function(x){
+  if(!is.factor(x)) x <- as.factor(x)
+  levels(x)
+}
+
+# Check if is a list
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.is_list <- function(x){
+  inherits(x, "list")
+}
+
+# Collapse one or two vectors
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.collapse <- function(x, y = NULL, sep = "."){
+  if(missing(y))
+    paste(x, collapse = sep)
+  else if(is.null(x) & is.null(y))
+    return(NULL)
+  else if(is.null(x))
+    return (as.character(y))
+  else if(is.null(y))
+    return(as.character(x))
+  else
+    paste0(x, sep, y)
+}
+
+# Check if en object is empty
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.is_empty <- function(x){
+  length(x) == 0
+}
+
+
+# Pasting the column name to each value of a dataframe
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+.paste_colnames <- function(data, sep = "."){
+
+  data <- as.data.frame(data)
+
+  if(ncol(data) == 1){
+
+    res <- paste0(colnames(data), ".", data[[1]])
+    res <- data.frame(x = res, stringsAsFactors = FALSE)
+    colnames(res) <- colnames(data)
+    return(res)
+  }
+
+  res <- apply(data, 1,
+               function(row, cname){paste(cname, row, sep = sep)},
+               colnames(data)
+  ) %>%
+    t() %>%
+    as.data.frame(stringsAsFactors = FALSE)
+  colnames(res) <- colnames(data)
+  res
+}
+
+
+# Bind data list by rows
+#:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+# add id columns for a named data list
+.rbind_data_list <- function(df.list){
+
+  .names <- names(df.list)
+
+  if(!is.null(.names)){
+    df.list <- purrr::map2(df.list, .names, function(df, .name){
+      dplyr::mutate(df, id = .name)
+    })
+  }
+
+  id <- NULL
+  res <- dplyr::bind_rows(df.list) %>%
+    dplyr::select(id, dplyr::everything())
+  res
+}
+
+
 

@@ -11,7 +11,7 @@
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
 <!-- Bootstrap -->
-<link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/flatly/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/lumen/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
@@ -81,7 +81,7 @@
   <div class="col-md-9">
     <div class="page-header">
       <h1>Function reference</h1>
-      <h4>version&nbsp;0.3.1</h4>
+      <h4>version&nbsp;0.4.1</h4>
     </div>
 
     <div class="contents">
@@ -94,7 +94,12 @@
         <li><code><a href="arrange_ggsurvplots.html">arrange_ggsurvplots</a></code></li>
       </ul>
       
-      <p><a href="ggsurvevents.html">Distribution of Event's Times</a></p>
+      <p><a href="ggflexsurvplot.html">Ggplots of Fitted Flexible Survival Models</a></p>
+      <ul>
+        <li><code><a href="ggflexsurvplot.html">ggflexsurvplot</a></code></li>
+      </ul>
+      
+      <p><a href="ggsurvevents.html">Distribution of Events' Times</a></p>
       <ul>
         <li><code><a href="ggsurvevents.html">ggsurvevents</a></code></li>
       </ul>
@@ -140,12 +145,7 @@
       <p class="section-desc"></p>
 
       
-      <p><a href="ggcoxadjustedcurves.html">Adjusted Survival Curves for Cox Proportional Hazards Model</a></p>
-      <ul>
-        <li><code><a href="ggcoxadjustedcurves.html">ggcoxadjustedcurves</a></code></li>
-      </ul>
-      
-      <p><a href="ggforest.html">Drawing Forest Plot for CoxPH model</a></p>
+      <p><a href="ggforest.html">Forest Plot for Cox Proportional Hazards Model</a></p>
       <ul>
         <li><code><a href="ggforest.html">ggforest</a></code></li>
       </ul>
@@ -161,19 +161,34 @@
       <p class="section-desc"></p>
 
       
-      <p><a href="ggcumcensor.html">Cumulative Number of Censored Subjects</a></p>
+      <p><a href="ggsurvplot_add_all.html">Add Survival Curves of Pooled Patients onto the Main Plot</a></p>
       <ul>
-        <li><code><a href="ggcumcensor.html">ggcumcensor</a></code></li>
+        <li><code><a href="ggsurvplot_add_all.html">ggsurvplot_add_all</a></code></li>
       </ul>
       
-      <p><a href="ggcumevents.html">Cumulative Number of Events Table</a></p>
+      <p><a href="ggsurvplot_combine.html">Combine a List of Survfit Objects on the Same Plot</a></p>
       <ul>
-        <li><code><a href="ggcumevents.html">ggcumevents</a></code></li>
+        <li><code><a href="ggsurvplot_combine.html">ggsurvplot_combine</a></code></li>
       </ul>
       
-      <p><a href="ggrisktable.html">Number at Risk Table</a></p>
+      <p><a href="ggsurvplot_df.html">Plot Survival Curves from Survival Summary Data Frame</a></p>
       <ul>
-        <li><code><a href="ggrisktable.html">ggrisktable</a></code></li>
+        <li><code><a href="ggsurvplot_df.html">ggsurvplot_df</a></code></li>
+      </ul>
+      
+      <p><a href="ggsurvplot_group_by.html">Survival Curves of Grouped Data sets</a></p>
+      <ul>
+        <li><code><a href="ggsurvplot_group_by.html">ggsurvplot_group_by</a></code></li>
+      </ul>
+      
+      <p><a href="ggsurvplot_list.html">Plot a List of Survfit Objects</a></p>
+      <ul>
+        <li><code><a href="ggsurvplot_list.html">ggsurvplot_list</a></code></li>
+      </ul>
+      
+      <p><a href="ggsurvtable.html">Plot Survival Tables</a></p>
+      <ul>
+        <li><code><a href="ggsurvtable.html">ggrisktable</a></code></li><li><code><a href="ggsurvtable.html">ggcumevents</a></code></li><li><code><a href="ggsurvtable.html">ggcumcensor</a></code></li><li><code><a href="ggsurvtable.html">ggsurvtable</a></code></li>
       </ul>
           <h2 id="section-data" class="hasAnchor"><a href="#section-data" class="anchor"></a>Data</h2>
       <p class="section-desc"></p>
@@ -194,17 +209,12 @@
       
       <p><a href="add_ggsurvplot.html">Add Components to a ggsurvplot</a></p>
       <ul>
-        <li><code><a href="add_ggsurvplot.html">add_ggsurvplot</a></code></li><li><code><a href="add_ggsurvplot.html">+.ggsurv</a></code></li><li><code><a href="add_ggsurvplot.html">%+%</a></code></li>
+        <li><code><a href="add_ggsurvplot.html">add_ggsurvplot</a></code></li><li><code><a href="add_ggsurvplot.html">+.ggsurv</a></code></li><li><code><a href="add_ggsurvplot.html">%++%</a></code></li>
       </ul>
       
       <p><a href="ggsurvtheme.html">Theme for Survminer Plots</a></p>
       <ul>
         <li><code><a href="ggsurvtheme.html">theme_survminer</a></code></li><li><code><a href="ggsurvtheme.html">theme_cleantable</a></code></li>
-      </ul>
-      
-      <p><a href="theme_classic2.html">ggplot2 classic theme with axis lines</a></p>
-      <ul>
-        <li><code><a href="theme_classic2.html">theme_classic2</a></code></li>
       </ul>
     
     </div>
